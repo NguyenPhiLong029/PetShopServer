@@ -1,0 +1,81 @@
+# To contribute improvements to CI/CD templates, please follow the Development guide at:
+# https://docs.gitlab.com/ee/development/cicd/templates.html
+# This specific template is located at:
+# https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Nodejs.gitlab-ci.yml
+
+# Official framework image. Look for the different tagged releases at:
+# https://hub.docker.com/r/library/node/tags/
+image: node:12.20.2
+image: yarnpkg/node-yarn:1.22.4
+image: andreysenov/firebase-tools:9.16.0
+image: sandrokeil/typescript:latest
+
+# Pick zero or more services to be used on all builds.
+# Only needed when using a docker container to run your tests in.
+# http://docs.gitlab.com/ee/ci/docker/using_docker_images.html#what-is-a-service
+# https://docs.gitlab.com/ee/ci/yaml/index.html#cache
+
+
+# services:
+  # - mysql:latest
+  # - redis:latest
+  # - postgres:latest
+
+build:
+  stage: build
+  script:
+    - node -v
+    - npm -v
+    - yarn -v
+    - yarn install
+    - yarn build
+  cache:
+    key: cache_shinningweb
+    paths:
+      - node_modules/
+      - dist/
+
+code-validation:
+  stage: test
+  script:
+    - yarn validate
+  cache:
+    key: cache_shinningweb
+    paths:
+      - node_modules/
+      - dist/
+
+
+unit-test:
+  stage: test
+  script:
+    - echo "Perform the unit test cases !"
+  # cache:
+  #   key: cache_shinningweb
+  #   paths:
+  #     - node_modules/
+  #     - dist/
+
+  
+deploy:
+  stage: deploy
+  cache: {} #https://docs.gitlab.com/ee/ci/caching/#disable-cache-for-specific-jobs
+  script:
+    - yarn install
+    - yarn build
+    - export GOOGLE_APPLICATION_CREDENTIALS=firebase-service-account.json
+    - firebase deploy
+  rules: 
+    - if: '$CI_COMMIT_BRANCH == "master"'
+      when: manual
+
+
+# test-job:
+#   script:
+#     - npm install --legacy-peer-deps
+# - node ./specs/start.js ./specs/async.spec.js
+
+# test_db:
+#   script:
+#     - npm install
+# - node ./specs/start.js ./specs/db-postgres.spec.js
